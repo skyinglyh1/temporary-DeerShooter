@@ -216,11 +216,14 @@ def settleAccount(id, account, score):
     RequireWitness(Admin)
     playerPaidAmount = Get(GetContext(), concatKey(concatKey(id, PLAYER_PAY_ONGAMOUNT_KEY), account))
     odd = _calculateOdd(score)
+    if odd > 0:
+        payOut = Div(Mul(odd, playerPaidAmount), 100)
+        Require(_transferONGFromContact(account, payOut))
+        Notify(["win", id, account, score, payOut])
+    return True
 
 
-
-
-def payToPlay(account, ongAmount):
+def play(account, ongAmount):
     RequireWitness(account)
     Require(ongAmount > 0)
     currentId = Get(GetContext(), ROUND_ID_NUMBER_KEY)
@@ -230,6 +233,10 @@ def payToPlay(account, ongAmount):
     Put(GetContext(), ROUND_ID_NUMBER_KEY, nextID)
     # Put(GetContext(), concatKey(nextID, ROUND_START_TIME_KEY), GetTime())
     Put(GetContext(), concatKey(concatKey(nextID, PLAYER_PAY_ONGAMOUNT_KEY), account), ongAmount)
+
+    # deal with Lucky sending and referral Lucky sending
+
+
     Notify(["play", nextID, account, ongAmount])
     return True
 
