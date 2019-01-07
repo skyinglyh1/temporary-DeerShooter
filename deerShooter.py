@@ -200,7 +200,7 @@ def Main(operation, args):
         toAcct = args[0]
         ongAmount = args[1]
         return adminWithdraw(toAcct, ongAmount)
-    if operation == "":
+    if operation == "adminWithdrawLucky":
         Require(len(args) == 2)
         toAcct = args[0]
         luckyAmount = args[1]
@@ -580,29 +580,29 @@ def _calculateOdd(score):
     p = Add(abs(blockHash) % 1000000, 1)
     if Sub(1000000, zp) <= p:
         return 100
-    const = (B*p+1)*p*100
+    const = (B*p+1)*p
     tmp_x = (B*p+1 - A) * 100
     const1 = (B * p + 1) * p * 101
-    const2= (B * p + 1) * p * 500000
+    const2 = (B * p + 1) * p * 500000
     if tmp_x < const1:
         tmp_x = const1
     elif tmp_x > const2:
         tmp_x = const2
     X = 0
     if score >=0 and score < 20:
-        X = Div(Mul((tmp_x - const) * 2, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 2, 10), const)
     if score >=20 and score < 30:
-        X = Div(Mul((tmp_x - const) * 3, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 3, 10), const)
     if score >=30 and score < 40:
-        X = Div(Mul((tmp_x - const) * 4, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 4, 10), const)
     if score >=40 and score < 50:
-        X = Div(Mul((tmp_x - const) * 5, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 5, 10), const)
     if score >=50 and score < 70:
-        X = Div(Mul((tmp_x - const) * 7, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 7, 10), const)
     if score >=70 and score < 100:
-        X = Div(Mul((tmp_x - const) * 8, 1000), const)
+        X = Div(Mul((tmp_x - const * 100) * 8, 10), const)
     if score >=100:
-        X = Div(Mul((tmp_x - const), 100), const)
+        X = Div((tmp_x - const * 100), const)
     return X
 
 def _transferONG(fromAcct, toAcct, amount):
