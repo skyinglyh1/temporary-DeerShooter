@@ -553,29 +553,30 @@ def _calculateOdd(score):
     p = Add(abs(blockHash) % 1000000, 1)
     if Sub(1000000, zp) <= p:
         return 100
-    const = ((B * p + 1) * p)
-    tmp_x = ((B * p + 1 - A) * 100) * 1000000
-    const1 = (B * p + 1) * p * 101
-    const2 = (B * p + 1) * p * 500000
+    const = Mul(Add(Mul(B, p), 1), p)
+    tmp_x = Mul(Mul(Sub(Add(Mul(B, p), 1), A), 100), 1000000)
+    const1 = Mul(const, 101)
+    const2 = Mul(const, 500000)
     if tmp_x < const1:
         tmp_x = const1
     elif tmp_x > const2:
         tmp_x = const2
     X = 0
+    const3 = Mul(const, 100)
     if score >=0 and score < 20:
-        X = Div(Div((tmp_x - const * 100) * 2, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 2), 10), const)
     if score >=20 and score < 30:
-        X = Div(Div((tmp_x - const * 100) * 3, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 3), 10), const)
     if score >=30 and score < 40:
-        X = Div(Div((tmp_x - const * 100) * 4, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 4), 10), const)
     if score >=40 and score < 50:
-        X = Div(Div((tmp_x - const * 100) * 5, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 5), 10), const)
     if score >=50 and score < 70:
-        X = Div(Div((tmp_x - const * 100) * 7, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 7), 10), const)
     if score >=70 and score < 100:
-        X = Div(Div((tmp_x - const * 100) * 8, 10), const)
+        X = Div(Div(Mul(Sub(tmp_x, const3), 8), 10), const)
     if score >=100:
-        X = Div((tmp_x - const * 100), const)
+        X = Div(Sub(tmp_x, const3), const)
     return X
 
 def _transferONG(fromAcct, toAcct, amount):
