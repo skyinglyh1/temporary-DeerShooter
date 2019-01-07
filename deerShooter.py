@@ -160,7 +160,6 @@ TOTAL_ONG_FOR_ADMIN = "G7"
 
 PLAYER_REFERRAL_KEY = "P1"
 PLAYER_LAST_CHECK_IN_DAY = "P2"
-ID_PLAYER_PAY_ONGAMOUNT_KEY = "P3"
 ID_UNPAID_PLAYER_KEY = "P4"
 
 def Main(operation, args):
@@ -328,10 +327,10 @@ def setParameters(zp, A, B):
 
 def endGame(roundId, score):
     RequireWitness(Admin)
-    account = Get(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
+    account = Get(GetContext(), concatKey(roundId, ID_UNPAID_PLAYER_KEY))
     playerUnpaidAmount = Get(GetContext(), concatKey(roundId, account))
     Require(playerUnpaidAmount > 0)
-    Delete(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
+    Delete(GetContext(), concatKey(roundId, account))
     odd = _calculateOdd(score)
     payOut = 0
     if odd > 0:
@@ -354,8 +353,8 @@ def adminInvest(ongAmount):
 def adminWithdraw(toAcct, ongAmount):
     RequireWitness(Admin)
     roundId = getCurrentRound()
-    roundUnpaidPlayer = Get(GetContext(), concatKey(roundId, ID_UNPAID_PLAYER_KEY))
-    Require(not roundUnpaidPlayer)
+
+    Require(getRoundGameStatus(roundId) == 2)
     totalOngForAdmin = getTotalOngForAdmin()
     Require(ongAmount <= totalOngForAdmin)
     Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Sub(getTotalOngForAdmin(), ongAmount))
@@ -406,11 +405,9 @@ def payToPlay(account, ongAmount):
     Require(_transferONG(account, ContractAddress, ongAmount))
     Put(GetContext(), ROUND_ID_NUMBER_KEY, currentId)
 
-    # Put(GetContext(), concatKey(concatKey(currentId, PLAYER_PAY_ONGAMOUNT_KEY), account), ongAmount)
-
     Put(GetContext(), concatKey(currentId, ID_UNPAID_PLAYER_KEY), account)
 
-    Put(GetContext(), concatKey(currentId, ID_PLAYER_PAY_ONGAMOUNT_KEY), ongAmount)
+    Put(GetContext(), concatKey(currentId, account), ongAmount)
 
     Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Add(getTotalOngForAdmin(), ongAmount))
     # deal with Lucky sending and referral Lucky sending
@@ -501,7 +498,7 @@ def getRoundGameStatus(roundId):
     1 means roundId have started, not ended yet.
     2 means roundId have ended
     """
-    account = Get(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
+    account = Get(GetContext(), concatKey(roundId, ID_UNPAID_PLAYER_KEY))
     if not account:
         return 0
     playerUnpaidAmount = Get(GetContext(), concatKey(roundId, account))
