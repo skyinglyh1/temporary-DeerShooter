@@ -156,18 +156,120 @@ A_KEY = "G3"
 B_KEY = "G4"
 ZP_KEY = "G5"
 ROUND_START_TIME_KEY = "G6"
-
+REFERRAL_BONUS_PERCENTAGE_KEY = "G7"
+TOTAL_ONG_FOR_ADMIN = "G8"
 
 PLAYER_REFERRAL_KEY = "P1"
 PLAYER_LAST_CHECK_IN_TIME = "P2"
-PLAYER_PAY_ONGAMOUNT_KEY = "P3"
-
+ID_PLAYER_PAY_ONGAMOUNT_KEY = "P3"
+ID_UNPAID_PLAYER_KEY = "P4"
 def Main(operation, args):
+    ######################## for Admin to invoke Begin ###############
     if operation == "init":
         return init()
-
+    if operation == "setLuckyContractHash":
+        Require(len(args) == 1)
+        reversedLuckyContractHash = args[0]
+        return setLuckyContractHash(reversedLuckyContractHash)
+    if operation == "setLuckyToOngRate":
+        Require(len(args) == 2)
+        ong = args[0]
+        lucky = args[1]
+        return setLuckyToOngRate(ong, lucky)
+    if operation == "setReferralBonusPercentage":
+        Require(len(args) == 1)
+        referralBonus = args[0]
+        return setReferralBonusPercentage(referralBonus)
+    if operation == "setParameters":
+        Require(len(args) == 3)
+        zp = args[0]
+        A = args[1]
+        B = args[2]
+        return setParameters(zp, A, B)
+    if operation == "endGame":
+        Require(len(args) == 2)
+        roundId = args[0]
+        score = args[1]
+        return endGame(roundId, score)
+    if operation == "adminInvest":
+        Require(len(args) == 1)
+        ongAmount = args[0]
+        return adminInvest(ongAmount)
+    if operation == "adminWithdraw":
+        Require(len(args) == 2)
+        toAcct = args[0]
+        ongAmount = args[1]
+        return adminWithdraw(toAcct, ongAmount)
+    if operation == "":
+        Require(len(args) == 2)
+        toAcct = args[0]
+        luckyAmount = args[1]
+        return adminWithdrawLucky(toAcct, luckyAmount)
+    if operation == "migrateContract":
+        Require(len(args) == 8)
+        code = args[0]
+        needStorage = args[1]
+        name = args[2]
+        version = args[3]
+        author = args[4]
+        email = args[5]
+        description = args[6]
+        newReversedContractHash = args[7]
+        return migrateContract(code, needStorage, name, version, author, email, description, newReversedContractHash)
+    ######################## for Admin to invoke End ###############
+    ######################## for Player to invoke Begin ###############
+    if operation == "payToPlay":
+        Require(len(args) == 2)
+        account = args[0]
+        ongAmount = args[1]
+        return payToPlay(account, ongAmount)
+    if operation == "addReferral":
+        Require(len(args) == 2)
+        toBeReferred = args[0]
+        referral = args[1]
+        return addReferral(toBeReferred, referral)
+    if operation == "checkIn":
+        Require(len(args) == 1)
+        account = args[0]
+        return checkIn(account)
+    ######################## for Player to invoke End ###############
+    ####################### Global Info Start #####################
+    if operation == "getTotalOngForAdmin":
+        return getTotalOngForAdmin()
+    if operation == "getLuckyContractHash":
+        return getLuckyContractHash()
+    if operation == "getLuckyToOngRate":
+        return getLuckyToOngRate()
+    if operation == "getReferralBonusPercentage":
+        return getReferralBonusPercentage()
+    if operation == "getParameters":
+        return getParameters()
+    if operation == "getCurrentRound":
+        return getCurrentRound()
+    if operation == "getRoundGameStatus":
+        Require(len(args) == 1)
+        roundId = args[0]
+        return getRoundGameStatus(roundId)
+    ####################### Global Info End #####################
+    ####################### Player Info Start #####################
+    if operation == "getReferral":
+        Require(len(args) == 1)
+        toBeReferred = args[0]
+        return getReferral(toBeReferred)
+    if operation == "canCheckIn":
+        Require(len(args) == 1)
+        account = args[0]
+        return canCheckIn(account)
+    ####################### Player Info End #####################
+    if operation == "getTrialGameAward":
+        Require(len(args) == 2)
+        gamePayOng = args[0]
+        score = args[1]
+        return getTrialGameAward(gamePayOng, score)
     return False
 
+
+####################### Methods that only Admin can invoke Start #######################
 def init():
     RequireWitness(Admin)
     inited = Get(GetContext(), INIIT_KEY)
@@ -176,6 +278,10 @@ def init():
         return False
     else:
         Put(GetContext(), INIIT_KEY, 1)
+        setReferralBonusPercentage(10)
+        setLuckyToOngRate(1, 2)
+        # zp = 0.02, A = 0.7, B = 30, the pass in parameters should = (real parameters) * 100
+        setParameters(2, 70, 3000)
         Notify(["Initialized contract successfully"])
     return True
 
@@ -193,8 +299,16 @@ def setLuckyToOngRate(ong, lucky):
     :return:
     """
     RequireWitness(Admin)
-    Put(GetContext(), LUCKY_TO_ONG_RATE_KEY, Div(Mul(Mul(lucky, LuckyMagnitude), Magnitude), Mul(ong, ONGMagnitude)))
+    Put(GetContext(), LUCKY_TO_ONG_RATE_KEY, Div(Mul(lucky, Magnitude), ong))
     Notify(["setRate", ong, lucky])
+    return True
+
+def setReferralBonusPercentage(referralBonus):
+    RequireWitness(Admin)
+    Require(referralBonus >= 0)
+    Require(referralBonus <= 100)
+    Put(GetContext(), REFERRAL_BONUS_PERCENTAGE_KEY, referralBonus)
+    Notify(["setReferralBonus", referralBonus])
     return True
 
 def setParameters(zp, A, B):
@@ -212,32 +326,107 @@ def setParameters(zp, A, B):
     Notify(["setParameters", zp, A, B])
     return True
 
-def settleAccount(id, account, score):
+def endGame(roundId, score):
     RequireWitness(Admin)
-    playerPaidAmount = Get(GetContext(), concatKey(concatKey(id, PLAYER_PAY_ONGAMOUNT_KEY), account))
+    account = Get(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
+    playerUnpaidAmount = Get(GetContext(), concatKey(roundId, account))
+    Require(playerUnpaidAmount > 0)
+    Delete(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
     odd = _calculateOdd(score)
     if odd > 0:
-        payOut = Div(Mul(odd, playerPaidAmount), 100)
+        payOut = Div(Mul(odd, playerUnpaidAmount), 100)
         Require(_transferONGFromContact(account, payOut))
-        Notify(["win", id, account, score, payOut])
+        Notify(["win", roundId, account, score, payOut])
+    Notify(["endGame", roundId])
     return True
 
+def adminInvest(ongAmount):
+    RequireWitness(Admin)
+    Require(_transferONG(Admin, ContractAddress, ongAmount))
+    Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Add(getTotalOngForAdmin(), ongAmount))
+    Notify(["adminInvest", ongAmount])
+    return True
 
-def play(account, ongAmount):
+def adminWithdraw(toAcct, ongAmount):
+    RequireWitness(Admin)
+    roundId = getCurrentRound()
+    roundUnpaidPlayer = Get(GetContext(), concatKey(roundId, ID_UNPAID_PLAYER_KEY))
+    Require(not roundUnpaidPlayer)
+    totalOngForAdmin = getTotalOngForAdmin()
+    Require(ongAmount <= totalOngForAdmin)
+    Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Sub(getTotalOngForAdmin(), ongAmount))
+
+    Require(_transferONGFromContact(toAcct, ongAmount))
+    Notify(["adminWithdraw", toAcct, ongAmount])
+    return True
+
+def adminWithdrawLucky(toAcct, luckyAmount):
+    RequireWitness(Admin)
+    revesedContractAddress = getLuckyContractHash()
+    params = [ContractAddress]
+    totalLuckyAmount = DynamicAppCall(revesedContractAddress, "balanceOf", params)
+    if luckyAmount <= totalLuckyAmount:
+        params = [ContractAddress, toAcct, luckyAmount]
+        res = DynamicAppCall(revesedContractAddress, "transfer", params)
+        Require(res)
+    Notify(["adminWithdrawLucky", toAcct, luckyAmount])
+    return True
+
+def migrateContract(code, needStorage, name, version, author, email, description, newReversedContractHash):
+    RequireWitness(Admin)
+    param = state(ContractAddress)
+    totalOngAmount = Invoke(0, ONGAddress, 'balanceOf', param)
+    if totalOngAmount > 0:
+        res = _transferONGFromContact(newReversedContractHash, totalOngAmount)
+        Require(res)
+    revesedContractAddress = Get(GetContext(), LUCKY_CONTRACT_HASH_KEY)
+    params = [ContractAddress]
+    totalLuckyAmount = DynamicAppCall(revesedContractAddress, "balanceOf", params)
+    if totalLuckyAmount > 0:
+        params = [ContractAddress, newReversedContractHash, totalLuckyAmount]
+        res = DynamicAppCall(revesedContractAddress, "transfer", params)
+        Require(res)
+    res = Migrate(code, needStorage, name, version, author, email, description)
+    Require(res)
+    Notify(["Migrate Contract successfully"])
+    return True
+####################### Methods that only Admin can invoke End #######################
+
+
+######################## Methods for Players Start ######################################
+def payToPlay(account, ongAmount):
     RequireWitness(account)
     Require(ongAmount > 0)
-    currentId = Get(GetContext(), ROUND_ID_NUMBER_KEY)
-    nextID = Add(currentId, 1)
+    currentId = Add(getCurrentRound(), 1)
 
     Require(_transferONG(account, ContractAddress, ongAmount))
-    Put(GetContext(), ROUND_ID_NUMBER_KEY, nextID)
-    # Put(GetContext(), concatKey(nextID, ROUND_START_TIME_KEY), GetTime())
-    Put(GetContext(), concatKey(concatKey(nextID, PLAYER_PAY_ONGAMOUNT_KEY), account), ongAmount)
+    Put(GetContext(), ROUND_ID_NUMBER_KEY, currentId)
 
+    # Put(GetContext(), concatKey(concatKey(currentId, PLAYER_PAY_ONGAMOUNT_KEY), account), ongAmount)
+
+    Put(GetContext(), concatKey(currentId, ID_UNPAID_PLAYER_KEY), account)
+
+    Put(GetContext(), concatKey(currentId, ID_PLAYER_PAY_ONGAMOUNT_KEY), ongAmount)
+
+    Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Add(getTotalOngForAdmin(), ongAmount))
     # deal with Lucky sending and referral Lucky sending
+    _referralLuckyBalanceToBeAdd = 0
+    acctLuckyBalanceToBeAdd = Div(Mul(ongAmount, getLuckyToOngRate()), Magnitude)
+    ############### Transfer Lucky TWO times to account and referral ###############
+    # transfer LUCKY to account
+    params = [ContractAddress, account, acctLuckyBalanceToBeAdd]
+    revesedContractAddress = Get(GetContext(), LUCKY_CONTRACT_HASH_KEY)
+    res = DynamicAppCall(revesedContractAddress, "transfer", params)
+    Require(res)
+    referral = getReferral(account)
+    if len(referral) == 20:
+        # transfer LUCKY to referral
+        _referralLuckyBalanceToBeAdd = Div(Mul(acctLuckyBalanceToBeAdd, getReferralBonusPercentage()), 100)
+        params = [ContractAddress, referral, _referralLuckyBalanceToBeAdd]
+        res = DynamicAppCall(revesedContractAddress, "transfer", params)
+        Require(res)
 
-
-    Notify(["play", nextID, account, ongAmount])
+    Notify(["payToPlay", currentId, account, ongAmount])
     return True
 
 
@@ -245,7 +434,7 @@ def addReferral(toBeReferred, referral):
     RequireScriptHash(toBeReferred)
     RequireScriptHash(referral)
     if CheckWitness(Admin) or CheckWitness(toBeReferred):
-        if not getReferrral(toBeReferred):
+        if not getReferral(toBeReferred):
             Put(GetContext(), concatKey(PLAYER_REFERRAL_KEY, toBeReferred), referral)
             Notify(["addReferral", toBeReferred, referral])
             return True
@@ -264,24 +453,88 @@ def checkIn(account):
     Require(res)
     Notify(["checkIn", account])
     return True
+######################## Methods for Players End ######################################
 
 
+################## Global Info Start #######################
+def getTotalOngForAdmin():
+    return Get(GetContext(), TOTAL_ONG_FOR_ADMIN)
 
-def getReferrral(toBeReferred):
+def getLuckyContractHash():
+    """
+    :return: the reversed Lucky contract hash
+    """
+    return Get(GetContext(), LUCKY_CONTRACT_HASH_KEY)
+
+def getLuckyToOngRate():
+    """
+    Div(Mul(Mul(lucky, LuckyMagnitude), Magnitude), Mul(ong, ONGMagnitude))
+     lucky
+    ------- * Magnitude
+     ong
+    :return:
+    """
+    return Get(GetContext(), LUCKY_TO_ONG_RATE_KEY)
+
+def getReferralBonusPercentage():
+    return Get(GetContext(), REFERRAL_BONUS_PERCENTAGE_KEY)
+
+def getParameters():
+    zp = Get(GetContext(), ZP_KEY)
+    A = Get(GetContext(), A_KEY)
+    B = Get(GetContext(), B_KEY)
+    return [zp, A, B]
+
+def getCurrentRound():
+    return Get(GetContext(), ROUND_ID_NUMBER_KEY)
+
+def getRoundGameStatus(roundId):
+    """
+    :param roundId:
+    :return:
+    0 means roundId have not started yet
+    1 means roundId have started, not ended yet.
+    2 means roundId have ended
+    """
+    account = Get(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
+    if not account:
+        return 0
+    playerUnpaidAmount = Get(GetContext(), concatKey(roundId, account))
+    if playerUnpaidAmount:
+        return 1
+    return 2
+
+################## Global Info End #######################
+
+
+####################### Player Info Start #####################
+def getReferral(toBeReferred):
     return Get(GetContext(), concatKey(PLAYER_REFERRAL_KEY, toBeReferred))
 
 def canCheckIn(account):
+    """
+    :param account:
+    :return: return == 0 => can NOT check in.
+              return > 0 => can check in.
+    """
     lastTimeCheckIn = Get(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_TIME, account))
     if not lastTimeCheckIn:
-        return Div(Sub(GetTime(), 1546272000), DaySeconds)
+        return Div(GetTime(), DaySeconds)
     now = GetTime()
-    # 1546272000  <=> January 1, 2019 12:00:00 AM GMT+08:00
-    days = Div(Sub(now, 1546272000), DaySeconds)
+    days = Div(now, DaySeconds)
     if days > lastTimeCheckIn:
         return days
     else:
         return 0
+####################### Player Info End #####################
 
+def getTrialGameAward(gamePayOng, score):
+    odd = _calculateOdd(score)
+    if odd > 0:
+        return Div(Mul(odd, gamePayOng), 100)
+    return 0
+
+######################### Utility Methods Start #########################
 
 # def getRandomX(zp, A, B, score):
 #     p = random.randint(1, 1000000)/1000000
@@ -385,69 +638,5 @@ def concatKey(str1,str2):
     :return: string1_string2
     """
     return concat(concat(str1, '_'), str2)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+######################### Utility Methods End #########################
 
