@@ -339,8 +339,9 @@ def endGame(roundId, score):
         if ongAmountForAdmin < payOut:
             Notify(["endGameFailed", roundId, score])
             return False
-        Delete(GetContext(), concatKey(roundId, account))
         Require(_transferONGFromContact(account, payOut))
+        Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Sub(ongAmountForAdmin, payOut))
+    Delete(GetContext(), concatKey(roundId, account))
     Notify(["endGame", roundId, account, score, payOut])
     return True
 
@@ -400,7 +401,7 @@ def migrateContract(code, needStorage, name, version, author, email, description
 ######################## Methods for Players Start ######################################
 def payToPlay(account, ongAmount):
     RequireWitness(account)
-    Require(ongAmount > 0)
+    Require(ongAmount > 100000000)
     currentId = Add(getCurrentRound(), 1)
 
     Require(_transferONG(account, ContractAddress, ongAmount))
@@ -533,9 +534,8 @@ def canCheckIn(account):
 
 def getTrialGameAward(gamePayOng, score):
     odd = _calculateOdd(score)
-    if odd > 0:
-        return Div(Mul(odd, gamePayOng), 100)
-    return 0
+    return Div(Mul(odd, gamePayOng), 100)
+
 
 ######################### Utility Methods Start #######################
 def _calculateOdd(score):
