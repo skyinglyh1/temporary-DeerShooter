@@ -445,12 +445,13 @@ def checkIn(account):
     RequireWitness(account)
 
     Require(canCheckIn(account) > 0)
-
+    Put(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_TIME, account), GetTime())
     freeLuckyAmount = LuckyMagnitude
     params  = [ContractAddress, account, freeLuckyAmount]
     revesedContractAddress = Get(GetContext(), LUCKY_CONTRACT_HASH_KEY)
     res = DynamicAppCall(revesedContractAddress, "transfer", params)
     Require(res)
+
     Notify(["checkIn", account])
     return True
 ######################## Methods for Players End ######################################
@@ -534,36 +535,7 @@ def getTrialGameAward(gamePayOng, score):
         return Div(Mul(odd, gamePayOng), 100)
     return 0
 
-######################### Utility Methods Start #########################
-
-# def getRandomX(zp, A, B, score):
-#     p = random.randint(1, 1000000)/1000000
-#     if 1-zp <= p:
-#         return 1.00
-#     fp = 1-A/(B*p+1)
-#     tmp_x = fp/p
-#     if tmp_x < 1.01:
-#         tmp_x = 1.01
-#     elif tmp_x > 5000:
-#         tmp_x = 5000
-#     x = 0
-#     if score >= 0 and score < 20:
-#         x = (tmp_x -1) * 0.2
-#     elif score >=20 and score < 30:
-#         x = (tmp_x -1) * 0.3
-#     elif score >= 30 and score < 40:
-#         x = (tmp_x - 1) * 0.4
-#     elif score >=40 and score < 50:
-#         x = (tmp_x -1) * 0.5
-#     elif score >=50 and score < 70:
-#         x = (tmp_x -1) * 0.7
-#     elif score >=70 and score < 100:
-#         x = (tmp_x -1) * 0.8
-#     elif score >= 100:
-#         x = (tmp_x - 1)
-#     return round(x, 2)
-
-
+######################### Utility Methods Start #######################
 def _calculateOdd(score):
     """
     Remember that zp, A, B are 100 * (the actual values), respectively.
