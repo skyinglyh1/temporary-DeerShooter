@@ -333,11 +333,15 @@ def endGame(roundId, score):
     Require(playerUnpaidAmount > 0)
     Delete(GetContext(), concatKey(roundId, ID_PLAYER_PAY_ONGAMOUNT_KEY))
     odd = _calculateOdd(score)
+    payOut = 0
     if odd > 0:
         payOut = Div(Mul(odd, playerUnpaidAmount), 100)
+        ongAmountForAdmin = getTotalOngForAdmin()
+        if ongAmountForAdmin < payOut:
+            Notify(["endGameFailed", roundId, score])
+            return False
         Require(_transferONGFromContact(account, payOut))
-        Notify(["win", roundId, account, score, payOut])
-    Notify(["endGame", roundId])
+    Notify(["endGame", roundId, account, score, payOut])
     return True
 
 def adminInvest(ongAmount):
