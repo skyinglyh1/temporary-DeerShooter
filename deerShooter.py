@@ -155,14 +155,14 @@ LUCKY_TO_ONG_RATE_KEY = "G2"
 A_KEY = "G3"
 B_KEY = "G4"
 ZP_KEY = "G5"
-ROUND_START_TIME_KEY = "G6"
-REFERRAL_BONUS_PERCENTAGE_KEY = "G7"
-TOTAL_ONG_FOR_ADMIN = "G8"
+REFERRAL_BONUS_PERCENTAGE_KEY = "G6"
+TOTAL_ONG_FOR_ADMIN = "G7"
 
 PLAYER_REFERRAL_KEY = "P1"
 PLAYER_LAST_CHECK_IN_TIME = "P2"
 ID_PLAYER_PAY_ONGAMOUNT_KEY = "P3"
 ID_UNPAID_PLAYER_KEY = "P4"
+
 def Main(operation, args):
     ######################## for Admin to invoke Begin ###############
     if operation == "init":
@@ -583,7 +583,7 @@ def _calculateOdd(score):
     const = (B*p+1)*p*100
     tmp_x = (B*p+1 - A) * 100
     const1 = (B * p + 1) * p * 101
-    const2= (B * p + 1) * p * 5000
+    const2= (B * p + 1) * p * 500000
     if tmp_x < const1:
         tmp_x = const1
     elif tmp_x > const2:
