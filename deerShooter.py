@@ -342,7 +342,7 @@ def endGame(roundId, score):
         Require(_transferONGFromContact(account, payOut))
         Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Sub(ongAmountForAdmin, payOut))
     Delete(GetContext(), concatKey(roundId, account))
-    Notify(["endGame", roundId, account, score, payOut])
+    Notify(["endGame", roundId, account, playerUnpaidAmount, score, odd, payOut])
     return True
 
 def adminInvest(ongAmount):
