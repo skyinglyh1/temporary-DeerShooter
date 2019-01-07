@@ -401,7 +401,7 @@ def migrateContract(code, needStorage, name, version, author, email, description
 ######################## Methods for Players Start ######################################
 def payToPlay(account, ongAmount):
     RequireWitness(account)
-    Require(ongAmount > 100000000)
+    Require(ongAmount >= 100000000)
     currentId = Add(getCurrentRound(), 1)
 
     Require(_transferONG(account, ContractAddress, ongAmount))
