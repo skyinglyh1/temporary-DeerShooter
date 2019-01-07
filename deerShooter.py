@@ -580,8 +580,8 @@ def _calculateOdd(score):
     p = Add(abs(blockHash) % 1000000, 1)
     if Sub(1000000, zp) <= p:
         return 100
-    const = (B*p+1)*p
-    tmp_x = (B*p+1 - A) * 100
+    const = ((B * p + 1) * p)
+    tmp_x = ((B * p + 1 - A) * 100) * 1000000
     const1 = (B * p + 1) * p * 101
     const2 = (B * p + 1) * p * 500000
     if tmp_x < const1:
@@ -590,17 +590,17 @@ def _calculateOdd(score):
         tmp_x = const2
     X = 0
     if score >=0 and score < 20:
-        X = Div(Mul((tmp_x - const * 100) * 2, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 2, 10), const)
     if score >=20 and score < 30:
-        X = Div(Mul((tmp_x - const * 100) * 3, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 3, 10), const)
     if score >=30 and score < 40:
-        X = Div(Mul((tmp_x - const * 100) * 4, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 4, 10), const)
     if score >=40 and score < 50:
-        X = Div(Mul((tmp_x - const * 100) * 5, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 5, 10), const)
     if score >=50 and score < 70:
-        X = Div(Mul((tmp_x - const * 100) * 7, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 7, 10), const)
     if score >=70 and score < 100:
-        X = Div(Mul((tmp_x - const * 100) * 8, 10), const)
+        X = Div(Div((tmp_x - const * 100) * 8, 10), const)
     if score >=100:
         X = Div((tmp_x - const * 100), const)
     return X
