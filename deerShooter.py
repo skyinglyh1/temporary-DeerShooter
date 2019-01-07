@@ -579,14 +579,14 @@ def _calculateOdd(score):
     blockHash = GetCurrentBlockHash()
     p = Add(blockHash % 1000000, 1)
     if Sub(1000000, zp) <= p:
-        return 1
+        return 100
     const = (B*p+1)*p*100
     tmp_x = (B*p+1 - A) * 100
     minOdd = 101
     maxOdd = 500000
-    if tmp_x < minOdd:
+    if tmp_x < (B*p+1)*p*101:
         return minOdd
-    elif tmp_x > maxOdd:
+    elif tmp_x > (B*p+1)*p*5000:
         return maxOdd
     X = 0
     if score >=0 and score < 20:
