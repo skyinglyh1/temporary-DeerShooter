@@ -583,9 +583,9 @@ def _calculateOdd(score):
     const = (B*p+1)*p*100
     tmp_x = (B*p+1 - A) * 100
     if tmp_x < (B*p+1)*p*101:
-        return 101
+        tmp_x = 101
     elif tmp_x > (B*p+1)*p*5000:
-        return 500000
+        tmp_x = 500000
     X = 0
     if score >=0 and score < 20:
         X = Div(Mul((tmp_x - const) * 2, 1000), const)
