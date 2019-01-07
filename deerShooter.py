@@ -159,7 +159,7 @@ REFERRAL_BONUS_PERCENTAGE_KEY = "G6"
 TOTAL_ONG_FOR_ADMIN = "G7"
 
 PLAYER_REFERRAL_KEY = "P1"
-PLAYER_LAST_CHECK_IN_TIME = "P2"
+PLAYER_LAST_CHECK_IN_DAY = "P2"
 ID_PLAYER_PAY_ONGAMOUNT_KEY = "P3"
 ID_UNPAID_PLAYER_KEY = "P4"
 
@@ -443,9 +443,9 @@ def addReferral(toBeReferred, referral):
 
 def checkIn(account):
     RequireWitness(account)
-
-    Require(canCheckIn(account) > 0)
-    Put(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_TIME, account), GetTime())
+    checkInDays = canCheckIn(account)
+    Require(checkInDays > 0)
+    Put(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_DAY, account), checkInDays)
     freeLuckyAmount = LuckyMagnitude
     params  = [ContractAddress, account, freeLuckyAmount]
     revesedContractAddress = Get(GetContext(), LUCKY_CONTRACT_HASH_KEY)
@@ -518,7 +518,7 @@ def canCheckIn(account):
     :return: return == 0 => can NOT check in.
               return > 0 => can check in.
     """
-    lastTimeCheckIn = Get(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_TIME, account))
+    lastTimeCheckIn = Get(GetContext(), concatKey(PLAYER_LAST_CHECK_IN_DAY, account))
     if not lastTimeCheckIn:
         return Div(GetTime(), DaySeconds)
     now = GetTime()
