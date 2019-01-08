@@ -441,7 +441,10 @@ def addReferral(toBeReferred, referral):
             Put(GetContext(), concatKey(PLAYER_REFERRAL_KEY, toBeReferred), referral)
             Notify(["addReferral", toBeReferred, referral])
             return True
-    return False
+        else:
+            raise Exception("Not allow to reset Referral.")
+    else:
+        raise Exception("CheckWitness failed")
 
 
 def checkIn(account):
