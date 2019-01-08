@@ -333,15 +333,16 @@ def endGame(roundId, score):
 
     odd = _calculateOdd(score)
     payOut = 0
+    Delete(GetContext(), concatKey(roundId, account))
     if odd > 0:
         payOut = Div(Mul(odd, playerUnpaidAmount), 100)
         ongAmountForAdmin = getTotalOngForAdmin()
         if ongAmountForAdmin < payOut:
-            Notify(["endGameFailed", roundId, score])
+            Notify(["endGameFailed", roundId, account, playerUnpaidAmount, score, odd, payOut])
             return False
         Require(_transferONGFromContact(account, payOut))
         Put(GetContext(), TOTAL_ONG_FOR_ADMIN, Sub(ongAmountForAdmin, payOut))
-    Delete(GetContext(), concatKey(roundId, account))
+    # Delete(GetContext(), concatKey(roundId, account))
     Notify(["endGame", roundId, account, playerUnpaidAmount, score, odd, payOut])
     return True
 
@@ -442,7 +443,7 @@ def addReferral(toBeReferred, referral):
             Notify(["addReferral", toBeReferred, referral])
             return True
         else:
-            raise Exception("Not allow to reset Referral.")
+            raise Exception("Not allow to reset Referral")
     else:
         raise Exception("CheckWitness failed")
 
